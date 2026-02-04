@@ -6,12 +6,15 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 
-// -------------------------
+// -------------------------------------------------
 // API ROUTES
-// -------------------------
+// -------------------------------------------------
 $routes->group('api', static function (RouteCollection $routes) {
 
-    // REPORT must be BEFORE (:num)
+    // DEBUG (TEMP – REMOVE AFTER FIXING DB)
+    $routes->get('_env', 'DebugController::env');
+
+    // REPORT (must be before (:num))
     $routes->get('donors/report', 'DonorController::report');
 
     // CRUD
@@ -22,8 +25,8 @@ $routes->group('api', static function (RouteCollection $routes) {
     $routes->delete('donors/delete/(:num)', 'DonorController::delete/$1');
 });
 
-// -------------------------
-// SPA FALLBACK (LAST)
-// -------------------------
+// -------------------------------------------------
+// SPA FALLBACK (ALWAYS LAST)
+// -------------------------------------------------
 $routes->get('/', 'Spa::index');
 $routes->get('(:any)', 'Spa::index');
