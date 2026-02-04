@@ -1,0 +1,8 @@
+.env
+/vendor/
+
+# ignore everything inside writable (but keep placeholders)
+writable
+writable/*
+!writable/.htaccess
+!writable/index.html

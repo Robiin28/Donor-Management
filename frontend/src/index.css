@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* App background */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-950 text-slate-100;
+}
+
+/* Smoother text */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glass card helper */
+.glass {
+  @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.45)] rounded-2xl;
+}
+
+/* Soft input style */
+.input {
+  @apply w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-slate-100 placeholder:text-slate-400 outline-none
+  focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/40;
+}
+
+/* Select style (same as input) */
+.select {
+  @apply w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-slate-100 outline-none
+  focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/40;
+}
+
+/*
+  ✅ FIX: Dropdown menu (options) showing white background with white text.
+  Browsers often ignore Tailwind styles on <option>, so force it here.
+*/
+select,
+.select {
+  color-scheme: dark; /* helps Chrome/Edge render native dropdown dark on Windows */
+}
+
+select option,
+.select option {
+  background-color: #0f172a; /* slate-900 */
+  color: #e2e8f0;            /* slate-200 */
+}
+
+/* Also ensure the selected value is visible */
+select,
+.select {
+  @apply text-slate-100;
+}
+
+/* Buttons */
+.btn {
+  @apply inline-flex items-center justify-center rounded-xl px-4 py-2 font-medium transition
+  bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed;
+}
+
+.btn-ghost {
+  @apply inline-flex items-center justify-center rounded-xl px-4 py-2 font-medium transition
+  bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed;
+}

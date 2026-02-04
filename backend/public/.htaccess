@@ -1,0 +1,18 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Allow direct access to real files
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+
+  # Allow direct access to real directories
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # API routes go to CodeIgniter
+  RewriteRule ^api/ index.php [L]
+
+  # Everything else → React
+  RewriteRule ^ index.html [L]
+</IfModule>

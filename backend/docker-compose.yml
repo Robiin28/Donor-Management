@@ -1,0 +1,36 @@
+services:
+  web:
+    build: .
+    container_name: donor_ci4_web
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    environment:
+      CI_ENVIRONMENT: production
+
+      # ✅ Mandatory DB switch (MySQL -> Postgres)
+      database.default.DBDriver: Postgre
+      database.default.hostname: db
+      database.default.port: 5432
+      database.default.database: donor_db
+      database.default.username: donor_user
+      database.default.password: donor_pass
+
+  db:
+    image: postgres:16
+    container_name: donor_ci4_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: donor_db
+      POSTGRES_USER: donor_user
+      POSTGRES_PASSWORD: donor_pass
+    volumes:
+      - donor_pg_data:/var/lib/postgresql/data
+
+volumes:
+  # ✅ keep your old MySQL data volume as-is (NOT used now, NOT deleted)
+  donor_db_data:
+
+  # ✅ new Postgres volume (mandatory, because mysql data can't be used by postgres)
+  donor_pg_data:
