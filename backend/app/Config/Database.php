@@ -35,44 +35,25 @@ class Database extends Config
      *   DB_ENCRYPT=true      (optional)
      */
     public array $default = [
-        'DSN'          => '',
-        'hostname'     => '',
-        'username'     => '',
-        'password'     => '',
-        'database'     => '',
-        'schema'       => 'public',
+    'DSN'      => '',
+    'hostname' => env('DB_HOST', '127.0.0.1'),
+    'username' => env('DB_USER', ''),
+    'password' => env('DB_PASS', ''),
+    'database' => env('DB_NAME', ''),
+    'DBDriver' => env('DB_CONNECTION', 'Postgre'),
+    'DBPrefix' => '',
+    'pConnect' => false,
+    'DBDebug'  => (bool) env('CI_DEBUG', false),
+    'charset'  => 'utf8',
+    'DBCollat' => 'utf8_general_ci',
+    'swapPre'  => '',
+    'encrypt'  => false,
+    'compress' => false,
+    'strictOn' => false,
+    'failover' => [],
+    'port'     => (int) env('DB_PORT', 5432),
+];
 
-        // Force Postgres by default so it never falls back to MySQLi on Render
-        'DBDriver'     => 'Postgre',
-
-        'DBPrefix'     => '',
-        'pConnect'     => false,
-        'DBDebug'      => ENVIRONMENT !== 'production',
-
-        // Postgres charset
-        'charset'      => 'utf8',
-        'DBCollat'     => '',
-        'swapPre'      => '',
-
-        // Render Postgres typically requires TLS/SSL
-        'encrypt'      => true,
-
-        // Supported by CI4 Postgre driver (passed to pg_connect)
-        // If your CI version doesn't use it, it will be ignored safely.
-        'sslmode'      => 'require',
-
-        'compress'     => false,
-        'strictOn'     => false,
-        'failover'     => [],
-        'port'         => 5432,
-        'numberNative' => false,
-        'foundRows'    => false,
-        'dateFormat'   => [
-            'date'     => 'Y-m-d',
-            'datetime' => 'Y-m-d H:i:s',
-            'time'     => 'H:i:s',
-        ],
-    ];
 
     /**
      * This database connection is used when running PHPUnit database tests.
