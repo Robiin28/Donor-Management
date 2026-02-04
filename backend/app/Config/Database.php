@@ -22,38 +22,46 @@ class Database extends Config
     /**
      * The default database connection.
      *
-     * IMPORTANT:
-     * - In production (Render), set these env vars in Render dashboard:
+     * NOTE:
+     * - Keep this property as "constant-safe" (no env(), no function calls),
+     *   because some PHP versions/environments can throw:
+     *   "Constant expression contains invalid operations"
+     * - We load Render/.env values in __construct().
+     *
+     * Render recommended env vars:
      *   DB_DRIVER=Postgre
-     *   DB_HOST=...
-     *   DB_NAME=...
-     *   DB_USER=...
-     *   DB_PASS=...
+     *   DB_HOST=dpg-xxxxxx-a
      *   DB_PORT=5432
-     *   DB_SCHEMA=public
-     *   DB_SSLMODE=require   (optional but recommended for Render Postgres)
-     *   DB_ENCRYPT=true      (optional)
+     *   DB_NAME=xxxx
+     *   DB_USER=xxxx
+     *   DB_PASS=xxxx
+     *   DB_SCHEMA=public        (optional)
+     *   DB_SSLMODE=require      (optional; sometimes needed)
+     *   DB_ENCRYPT=true|false   (optional)
      */
     public array $default = [
-    'DSN'      => '',
-    'hostname' => env('DB_HOST', '127.0.0.1'),
-    'username' => env('DB_USER', ''),
-    'password' => env('DB_PASS', ''),
-    'database' => env('DB_NAME', ''),
-    'DBDriver' => env('DB_CONNECTION', 'Postgre'),
-    'DBPrefix' => '',
-    'pConnect' => false,
-    'DBDebug'  => (bool) env('CI_DEBUG', false),
-    'charset'  => 'utf8',
-    'DBCollat' => 'utf8_general_ci',
-    'swapPre'  => '',
-    'encrypt'  => false,
-    'compress' => false,
-    'strictOn' => false,
-    'failover' => [],
-    'port'     => (int) env('DB_PORT', 5432),
-];
+        'DSN'      => '',
+        'hostname' => '127.0.0.1',
+        'username' => '',
+        'password' => '',
+        'database' => '',
+        'DBDriver' => 'Postgre',
+        'DBPrefix' => '',
+        'pConnect' => false,
+        'DBDebug'  => false,
+        'charset'  => 'utf8',
+        'DBCollat' => 'utf8_general_ci',
+        'swapPre'  => '',
+        'encrypt'  => false,
+        'compress' => false,
+        'strictOn' => false,
+        'failover' => [],
+        'port'     => 5432,
 
+        // PostgreSQL-specific options (safe defaults)
+        'schema'   => 'public',
+        'sslmode'  => 'prefer', // can be "require" on some hosts
+    ];
 
     /**
      * This database connection is used when running PHPUnit database tests.
@@ -98,29 +106,37 @@ class Database extends Config
             return;
         }
 
-        // Load from env (Render dashboard). This is the REAL fix.
-        // Works whether you use .env locally or Render env vars in production.
-        $this->default['DBDriver']  = env('DB_DRIVER', env('database.default.DBDriver', $this->default['DBDriver']));
-        $this->default['hostname']  = env('DB_HOST',   env('database.default.hostname', $this->default['hostname']));
-        $this->default['database']  = env('DB_NAME',   env('database.default.database', $this->default['database']));
-        $this->default['username']  = env('DB_USER',   env('database.default.username', $this->default['username']));
-        $this->default['password']  = env('DB_PASS',   env('database.default.password', $this->default['password']));
-        $this->default['port']      = (int) env('DB_PORT', env('database.default.port', $this->default['port']));
-        $this->default['schema']    = env('DB_SCHEMA', env('database.default.schema', $this->default['schema']));
-
-        // SSL flags (Render Postgres)
-        $this->default['encrypt']   = filter_var(
-            env('DB_ENCRYPT', env('database.default.encrypt', $this->default['encrypt'])),
-            FILTER_VALIDATE_BOOLEAN,
-            FILTER_NULL_ON_FAILURE
-        );
-        if ($this->default['encrypt'] === null) {
-            $this->default['encrypt'] = true;
+        // ---- Load from env (Render dashboard or local .env) ----
+        // Driver: support DB_DRIVER, fall back to DB_CONNECTION
+        $driver = env('DB_DRIVER', env('DB_CONNECTION', $this->default['DBDriver']));
+        if ($driver) {
+            $this->default['DBDriver'] = $driver;
         }
 
-        $this->default['sslmode']   = env('DB_SSLMODE', env('database.default.sslmode', $this->default['sslmode']));
+        // Host/user/pass/db/port
+        $this->default['hostname'] = env('DB_HOST', $this->default['hostname']);
+        $this->default['database'] = env('DB_NAME', $this->default['database']);
+        $this->default['username'] = env('DB_USER', $this->default['username']);
+        $this->default['password'] = env('DB_PASS', $this->default['password']);
+        $this->default['port']     = (int) env('DB_PORT', (string) $this->default['port']);
 
-        // Safety: if anything accidentally sets MySQLi, force Postgre unless you truly want MySQL.
+        // Optional schema + sslmode
+        $this->default['schema']  = env('DB_SCHEMA', $this->default['schema']);
+        $this->default['sslmode'] = env('DB_SSLMODE', $this->default['sslmode']);
+
+        // Optional encrypt flag (boolean-friendly)
+        $enc = env('DB_ENCRYPT', null);
+        if ($enc !== null) {
+            $val = filter_var($enc, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($val !== null) {
+                $this->default['encrypt'] = $val;
+            }
+        }
+
+        // Debug flag from CI_DEBUG
+        $this->default['DBDebug'] = (bool) env('CI_DEBUG', false);
+
+        // Safety: if something accidentally sets MySQLi, force Postgre unless you truly want MySQL
         if (strtolower((string) $this->default['DBDriver']) === 'mysqli') {
             $this->default['DBDriver'] = 'Postgre';
         }
