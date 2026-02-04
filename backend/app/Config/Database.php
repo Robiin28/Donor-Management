@@ -22,26 +22,49 @@ class Database extends Config
     /**
      * The default database connection.
      *
-     * @var array<string, mixed>
+     * IMPORTANT:
+     * - In production (Render), set these env vars in Render dashboard:
+     *   DB_DRIVER=Postgre
+     *   DB_HOST=...
+     *   DB_NAME=...
+     *   DB_USER=...
+     *   DB_PASS=...
+     *   DB_PORT=5432
+     *   DB_SCHEMA=public
+     *   DB_SSLMODE=require   (optional but recommended for Render Postgres)
+     *   DB_ENCRYPT=true      (optional)
      */
     public array $default = [
         'DSN'          => '',
-        'hostname'     => 'localhost',
+        'hostname'     => '',
         'username'     => '',
         'password'     => '',
         'database'     => '',
-        'DBDriver'     => 'MySQLi',
+        'schema'       => 'public',
+
+        // Force Postgres by default so it never falls back to MySQLi on Render
+        'DBDriver'     => 'Postgre',
+
         'DBPrefix'     => '',
         'pConnect'     => false,
-        'DBDebug'      => true,
-        'charset'      => 'utf8mb4',
-        'DBCollat'     => 'utf8mb4_general_ci',
+        'DBDebug'      => ENVIRONMENT !== 'production',
+
+        // Postgres charset
+        'charset'      => 'utf8',
+        'DBCollat'     => '',
         'swapPre'      => '',
-        'encrypt'      => false,
+
+        // Render Postgres typically requires TLS/SSL
+        'encrypt'      => true,
+
+        // Supported by CI4 Postgre driver (passed to pg_connect)
+        // If your CI version doesn't use it, it will be ignored safely.
+        'sslmode'      => 'require',
+
         'compress'     => false,
         'strictOn'     => false,
         'failover'     => [],
-        'port'         => 3306,
+        'port'         => 5432,
         'numberNative' => false,
         'foundRows'    => false,
         'dateFormat'   => [
@@ -50,112 +73,6 @@ class Database extends Config
             'time'     => 'H:i:s',
         ],
     ];
-
-    //    /**
-    //     * Sample database connection for SQLite3.
-    //     *
-    //     * @var array<string, mixed>
-    //     */
-    //    public array $default = [
-    //        'database'    => 'database.db',
-    //        'DBDriver'    => 'SQLite3',
-    //        'DBPrefix'    => '',
-    //        'DBDebug'     => true,
-    //        'swapPre'     => '',
-    //        'failover'    => [],
-    //        'foreignKeys' => true,
-    //        'busyTimeout' => 1000,
-    //        'synchronous' => null,
-    //        'dateFormat'  => [
-    //            'date'     => 'Y-m-d',
-    //            'datetime' => 'Y-m-d H:i:s',
-    //            'time'     => 'H:i:s',
-    //        ],
-    //    ];
-
-    //    /**
-    //     * Sample database connection for Postgre.
-    //     *
-    //     * @var array<string, mixed>
-    //     */
-    //    public array $default = [
-    //        'DSN'        => '',
-    //        'hostname'   => 'localhost',
-    //        'username'   => 'root',
-    //        'password'   => 'root',
-    //        'database'   => 'ci4',
-    //        'schema'     => 'public',
-    //        'DBDriver'   => 'Postgre',
-    //        'DBPrefix'   => '',
-    //        'pConnect'   => false,
-    //        'DBDebug'    => true,
-    //        'charset'    => 'utf8',
-    //        'swapPre'    => '',
-    //        'failover'   => [],
-    //        'port'       => 5432,
-    //        'dateFormat' => [
-    //            'date'     => 'Y-m-d',
-    //            'datetime' => 'Y-m-d H:i:s',
-    //            'time'     => 'H:i:s',
-    //        ],
-    //    ];
-
-    //    /**
-    //     * Sample database connection for SQLSRV.
-    //     *
-    //     * @var array<string, mixed>
-    //     */
-    //    public array $default = [
-    //        'DSN'        => '',
-    //        'hostname'   => 'localhost',
-    //        'username'   => 'root',
-    //        'password'   => 'root',
-    //        'database'   => 'ci4',
-    //        'schema'     => 'dbo',
-    //        'DBDriver'   => 'SQLSRV',
-    //        'DBPrefix'   => '',
-    //        'pConnect'   => false,
-    //        'DBDebug'    => true,
-    //        'charset'    => 'utf8',
-    //        'swapPre'    => '',
-    //        'encrypt'    => false,
-    //        'failover'   => [],
-    //        'port'       => 1433,
-    //        'dateFormat' => [
-    //            'date'     => 'Y-m-d',
-    //            'datetime' => 'Y-m-d H:i:s',
-    //            'time'     => 'H:i:s',
-    //        ],
-    //    ];
-
-    //    /**
-    //     * Sample database connection for OCI8.
-    //     *
-    //     * You may need the following environment variables:
-    //     *   NLS_LANG                = 'AMERICAN_AMERICA.UTF8'
-    //     *   NLS_DATE_FORMAT         = 'YYYY-MM-DD HH24:MI:SS'
-    //     *   NLS_TIMESTAMP_FORMAT    = 'YYYY-MM-DD HH24:MI:SS'
-    //     *   NLS_TIMESTAMP_TZ_FORMAT = 'YYYY-MM-DD HH24:MI:SS'
-    //     *
-    //     * @var array<string, mixed>
-    //     */
-    //    public array $default = [
-    //        'DSN'        => 'localhost:1521/XEPDB1',
-    //        'username'   => 'root',
-    //        'password'   => 'root',
-    //        'DBDriver'   => 'OCI8',
-    //        'DBPrefix'   => '',
-    //        'pConnect'   => false,
-    //        'DBDebug'    => true,
-    //        'charset'    => 'AL32UTF8',
-    //        'swapPre'    => '',
-    //        'failover'   => [],
-    //        'dateFormat' => [
-    //            'date'     => 'Y-m-d',
-    //            'datetime' => 'Y-m-d H:i:s',
-    //            'time'     => 'H:i:s',
-    //        ],
-    //    ];
 
     /**
      * This database connection is used when running PHPUnit database tests.
@@ -169,7 +86,7 @@ class Database extends Config
         'password'    => '',
         'database'    => ':memory:',
         'DBDriver'    => 'SQLite3',
-        'DBPrefix'    => 'db_',  // Needed to ensure we're working correctly with prefixes live. DO NOT REMOVE FOR CI DEVS
+        'DBPrefix'    => 'db_',
         'pConnect'    => false,
         'DBDebug'     => true,
         'charset'     => 'utf8',
@@ -194,11 +111,37 @@ class Database extends Config
     {
         parent::__construct();
 
-        // Ensure that we always set the database group to 'tests' if
-        // we are currently running an automated test suite, so that
-        // we don't overwrite live data on accident.
+        // Switch to SQLite tests connection when running PHPUnit
         if (ENVIRONMENT === 'testing') {
             $this->defaultGroup = 'tests';
+            return;
+        }
+
+        // Load from env (Render dashboard). This is the REAL fix.
+        // Works whether you use .env locally or Render env vars in production.
+        $this->default['DBDriver']  = env('DB_DRIVER', env('database.default.DBDriver', $this->default['DBDriver']));
+        $this->default['hostname']  = env('DB_HOST',   env('database.default.hostname', $this->default['hostname']));
+        $this->default['database']  = env('DB_NAME',   env('database.default.database', $this->default['database']));
+        $this->default['username']  = env('DB_USER',   env('database.default.username', $this->default['username']));
+        $this->default['password']  = env('DB_PASS',   env('database.default.password', $this->default['password']));
+        $this->default['port']      = (int) env('DB_PORT', env('database.default.port', $this->default['port']));
+        $this->default['schema']    = env('DB_SCHEMA', env('database.default.schema', $this->default['schema']));
+
+        // SSL flags (Render Postgres)
+        $this->default['encrypt']   = filter_var(
+            env('DB_ENCRYPT', env('database.default.encrypt', $this->default['encrypt'])),
+            FILTER_VALIDATE_BOOLEAN,
+            FILTER_NULL_ON_FAILURE
+        );
+        if ($this->default['encrypt'] === null) {
+            $this->default['encrypt'] = true;
+        }
+
+        $this->default['sslmode']   = env('DB_SSLMODE', env('database.default.sslmode', $this->default['sslmode']));
+
+        // Safety: if anything accidentally sets MySQLi, force Postgre unless you truly want MySQL.
+        if (strtolower((string) $this->default['DBDriver']) === 'mysqli') {
+            $this->default['DBDriver'] = 'Postgre';
         }
     }
 }
