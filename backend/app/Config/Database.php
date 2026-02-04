@@ -37,7 +37,7 @@ class Database extends Config
         'pConnect' => false,
         'DBDebug'  => false,
 
-        // These are not important for Postgres but are fine to keep
+        // Not important for Postgres, but safe to keep
         'charset'  => 'utf8',
         'DBCollat' => 'utf8_general_ci',
 
@@ -96,12 +96,11 @@ class Database extends Config
         }
 
         // ---------------------------------------------------------
-        // FIX FOR RENDER:
-        // Render usually provides DATABASE_URL like:
-        // postgres://user:pass@host:5432/dbname
-        // If we don't read it, CI keeps using 127.0.0.1 and fails.
+        // 1) Prefer DATABASE_URL if present (Render sometimes provides it)
+        // Example: postgres://user:pass@host:5432/dbname
         // ---------------------------------------------------------
         $dbUrl = env('DATABASE_URL');
+
         if (!empty($dbUrl)) {
             $parts = parse_url($dbUrl);
 
@@ -120,8 +119,8 @@ class Database extends Config
                     $this->default['username'] = $parts['user'];
                 }
 
+                // pass can be empty string, keep it as-is if provided
                 if (array_key_exists('pass', $parts)) {
-                    // pass can be empty string, keep it as-is
                     $this->default['password'] = (string) $parts['pass'];
                 }
 
@@ -129,49 +128,45 @@ class Database extends Config
                     $this->default['database'] = ltrim($parts['path'], '/');
                 }
 
-                // Keep SSL requirement for managed Postgres
-                $this->default['sslmode'] = env('database.default.sslmode', 'require');
-                $this->default['schema']  = env('database.default.schema', 'public');
+                // Query string may include sslmode
+                $query = [];
+                if (!empty($parts['query'])) {
+                    parse_str($parts['query'], $query);
+                }
 
-                // DBDebug can be true/false string
+                // Defaults for managed Postgres
+                $this->default['schema']  = env('DB_SCHEMA', $this->default['schema']);
+                $this->default['sslmode'] = $query['sslmode'] ?? env('DB_SSLMODE', $this->default['sslmode']);
+
+                // Debug toggle (optional)
                 $this->default['DBDebug'] = filter_var(
-                    env('database.default.DBDebug', $this->default['DBDebug']),
+                    env('DB_DEBUG', $this->default['DBDebug']),
                     FILTER_VALIDATE_BOOLEAN
                 );
 
-                // Done: DATABASE_URL overrides everything else
-                return;
+                return; // DATABASE_URL wins
             }
         }
 
         // ---------------------------------------------------------
-        // Fallback: use env keys you may set manually on Render
+        // 2) Fallback: use simple env vars (recommended on Render)
         // ---------------------------------------------------------
-        $this->default['hostname'] = env('database.default.hostname', $this->default['hostname']);
-        $this->default['username'] = env('database.default.username', $this->default['username']);
-        $this->default['password'] = env('database.default.password', $this->default['password']);
-        $this->default['database'] = env('database.default.database', $this->default['database']);
-        $this->default['DBDriver'] = env('database.default.DBDriver', $this->default['DBDriver']);
-        $this->default['DBPrefix'] = env('database.default.DBPrefix', $this->default['DBPrefix']);
+        $this->default['hostname'] = env('DB_HOST', $this->default['hostname']);
+        $this->default['port']     = (int) env('DB_PORT', (string) $this->default['port']);
+        $this->default['database'] = env('DB_NAME', $this->default['database']);
+        $this->default['username'] = env('DB_USER', $this->default['username']);
+        $this->default['password'] = env('DB_PASS', $this->default['password']);
 
-        $this->default['pConnect'] = filter_var(
-            env('database.default.pConnect', $this->default['pConnect']),
-            FILTER_VALIDATE_BOOLEAN
-        );
+        $this->default['schema']   = env('DB_SCHEMA', $this->default['schema']);
+        $this->default['sslmode']  = env('DB_SSLMODE', $this->default['sslmode']);
 
-        $this->default['port'] = (int) env('database.default.port', (string) $this->default['port']);
-
-        $this->default['schema']  = env('database.default.schema', $this->default['schema']);
-        $this->default['sslmode'] = env('database.default.sslmode', $this->default['sslmode']);
-
+        // Optional debug key
         $this->default['DBDebug'] = filter_var(
-            env('database.default.DBDebug', $this->default['DBDebug']),
+            env('DB_DEBUG', $this->default['DBDebug']),
             FILTER_VALIDATE_BOOLEAN
         );
 
-        // Extra safety: force Postgre if anything weird happens
-        if (strtolower((string) $this->default['DBDriver']) === 'mysqli') {
-            $this->default['DBDriver'] = 'Postgre';
-        }
+        // Hard force correct driver
+        $this->default['DBDriver'] = 'Postgre';
     }
 }
