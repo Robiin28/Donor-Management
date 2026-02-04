@@ -22,22 +22,9 @@ class Database extends Config
     /**
      * The default database connection.
      *
-     * NOTE:
-     * - Keep this property as "constant-safe" (no env(), no function calls),
-     *   because some PHP versions/environments can throw:
-     *   "Constant expression contains invalid operations"
-     * - We load Render/.env values in __construct().
-     *
-     * Render recommended env vars:
-     *   DB_DRIVER=Postgre
-     *   DB_HOST=dpg-xxxxxx-a
-     *   DB_PORT=5432
-     *   DB_NAME=xxxx
-     *   DB_USER=xxxx
-     *   DB_PASS=xxxx
-     *   DB_SCHEMA=public        (optional)
-     *   DB_SSLMODE=require      (optional; sometimes needed)
-     *   DB_ENCRYPT=true|false   (optional)
+     * IMPORTANT:
+     * Keep this property constant-safe (no env(), no function calls),
+     * then load env vars in __construct().
      */
     public array $default = [
         'DSN'      => '',
@@ -52,19 +39,19 @@ class Database extends Config
         'charset'  => 'utf8',
         'DBCollat' => 'utf8_general_ci',
         'swapPre'  => '',
-        'encrypt'  => false,
+        'encrypt'  => true,
         'compress' => false,
         'strictOn' => false,
         'failover' => [],
         'port'     => 5432,
 
-        // PostgreSQL-specific options (safe defaults)
+        // Postgres extras (CI4 supports these)
         'schema'   => 'public',
-        'sslmode'  => 'prefer', // can be "require" on some hosts
+        'sslmode'  => 'require',
     ];
 
     /**
-     * This database connection is used when running PHPUnit database tests.
+     * PHPUnit testing connection
      *
      * @var array<string, mixed>
      */
@@ -106,37 +93,38 @@ class Database extends Config
             return;
         }
 
-        // ---- Load from env (Render dashboard or local .env) ----
-        // Driver: support DB_DRIVER, fall back to DB_CONNECTION
-        $driver = env('DB_DRIVER', env('DB_CONNECTION', $this->default['DBDriver']));
-        if ($driver) {
-            $this->default['DBDriver'] = $driver;
-        }
+        // ---------------------------------------------------------
+        // Render env keys YOU ACTUALLY SET:
+        // database.default.hostname, database.default.username, etc.
+        // ---------------------------------------------------------
+        $this->default['hostname'] = env('database.default.hostname', $this->default['hostname']);
+        $this->default['username'] = env('database.default.username', $this->default['username']);
+        $this->default['password'] = env('database.default.password', $this->default['password']);
+        $this->default['database'] = env('database.default.database', $this->default['database']);
+        $this->default['DBDriver'] = env('database.default.DBDriver', $this->default['DBDriver']);
+        $this->default['DBPrefix'] = env('database.default.DBPrefix', $this->default['DBPrefix']);
+        $this->default['pConnect'] = filter_var(
+            env('database.default.pConnect', $this->default['pConnect']),
+            FILTER_VALIDATE_BOOLEAN
+        );
 
-        // Host/user/pass/db/port
-        $this->default['hostname'] = env('DB_HOST', $this->default['hostname']);
-        $this->default['database'] = env('DB_NAME', $this->default['database']);
-        $this->default['username'] = env('DB_USER', $this->default['username']);
-        $this->default['password'] = env('DB_PASS', $this->default['password']);
-        $this->default['port']     = (int) env('DB_PORT', (string) $this->default['port']);
+        $this->default['port'] = (int) env('database.default.port', (string) $this->default['port']);
 
-        // Optional schema + sslmode
-        $this->default['schema']  = env('DB_SCHEMA', $this->default['schema']);
-        $this->default['sslmode'] = env('DB_SSLMODE', $this->default['sslmode']);
+        // If you set these:
+        $this->default['schema']  = env('database.default.schema', $this->default['schema']);
+        $this->default['sslmode'] = env('database.default.sslmode', $this->default['sslmode']);
+        $this->default['encrypt'] = filter_var(
+            env('database.default.encrypt', $this->default['encrypt']),
+            FILTER_VALIDATE_BOOLEAN
+        );
 
-        // Optional encrypt flag (boolean-friendly)
-        $enc = env('DB_ENCRYPT', null);
-        if ($enc !== null) {
-            $val = filter_var($enc, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-            if ($val !== null) {
-                $this->default['encrypt'] = $val;
-            }
-        }
+        // DBDebug can be true/false string
+        $this->default['DBDebug'] = filter_var(
+            env('database.default.DBDebug', $this->default['DBDebug']),
+            FILTER_VALIDATE_BOOLEAN
+        );
 
-        // Debug flag from CI_DEBUG
-        $this->default['DBDebug'] = (bool) env('CI_DEBUG', false);
-
-        // Safety: if something accidentally sets MySQLi, force Postgre unless you truly want MySQL
+        // Extra safety: force Postgre if anything weird happens
         if (strtolower((string) $this->default['DBDriver']) === 'mysqli') {
             $this->default['DBDriver'] = 'Postgre';
         }
