@@ -36,16 +36,18 @@ class Database extends Config
         'DBPrefix' => '',
         'pConnect' => false,
         'DBDebug'  => false,
+
+        // These are not important for Postgres but are fine to keep
         'charset'  => 'utf8',
         'DBCollat' => 'utf8_general_ci',
+
         'swapPre'  => '',
-        'encrypt'  => true,
         'compress' => false,
         'strictOn' => false,
         'failover' => [],
         'port'     => 5432,
 
-        // Postgres extras (CI4 supports these)
+        // Postgres extras
         'schema'   => 'public',
         'sslmode'  => 'require',
     ];
@@ -94,8 +96,56 @@ class Database extends Config
         }
 
         // ---------------------------------------------------------
-        // Render env keys YOU ACTUALLY SET:
-        // database.default.hostname, database.default.username, etc.
+        // FIX FOR RENDER:
+        // Render usually provides DATABASE_URL like:
+        // postgres://user:pass@host:5432/dbname
+        // If we don't read it, CI keeps using 127.0.0.1 and fails.
+        // ---------------------------------------------------------
+        $dbUrl = env('DATABASE_URL');
+        if (!empty($dbUrl)) {
+            $parts = parse_url($dbUrl);
+
+            if (is_array($parts)) {
+                $this->default['DBDriver'] = 'Postgre';
+
+                if (!empty($parts['host'])) {
+                    $this->default['hostname'] = $parts['host'];
+                }
+
+                if (!empty($parts['port'])) {
+                    $this->default['port'] = (int) $parts['port'];
+                }
+
+                if (!empty($parts['user'])) {
+                    $this->default['username'] = $parts['user'];
+                }
+
+                if (array_key_exists('pass', $parts)) {
+                    // pass can be empty string, keep it as-is
+                    $this->default['password'] = (string) $parts['pass'];
+                }
+
+                if (!empty($parts['path'])) {
+                    $this->default['database'] = ltrim($parts['path'], '/');
+                }
+
+                // Keep SSL requirement for managed Postgres
+                $this->default['sslmode'] = env('database.default.sslmode', 'require');
+                $this->default['schema']  = env('database.default.schema', 'public');
+
+                // DBDebug can be true/false string
+                $this->default['DBDebug'] = filter_var(
+                    env('database.default.DBDebug', $this->default['DBDebug']),
+                    FILTER_VALIDATE_BOOLEAN
+                );
+
+                // Done: DATABASE_URL overrides everything else
+                return;
+            }
+        }
+
+        // ---------------------------------------------------------
+        // Fallback: use env keys you may set manually on Render
         // ---------------------------------------------------------
         $this->default['hostname'] = env('database.default.hostname', $this->default['hostname']);
         $this->default['username'] = env('database.default.username', $this->default['username']);
@@ -103,6 +153,7 @@ class Database extends Config
         $this->default['database'] = env('database.default.database', $this->default['database']);
         $this->default['DBDriver'] = env('database.default.DBDriver', $this->default['DBDriver']);
         $this->default['DBPrefix'] = env('database.default.DBPrefix', $this->default['DBPrefix']);
+
         $this->default['pConnect'] = filter_var(
             env('database.default.pConnect', $this->default['pConnect']),
             FILTER_VALIDATE_BOOLEAN
@@ -110,15 +161,9 @@ class Database extends Config
 
         $this->default['port'] = (int) env('database.default.port', (string) $this->default['port']);
 
-        // If you set these:
         $this->default['schema']  = env('database.default.schema', $this->default['schema']);
         $this->default['sslmode'] = env('database.default.sslmode', $this->default['sslmode']);
-        $this->default['encrypt'] = filter_var(
-            env('database.default.encrypt', $this->default['encrypt']),
-            FILTER_VALIDATE_BOOLEAN
-        );
 
-        // DBDebug can be true/false string
         $this->default['DBDebug'] = filter_var(
             env('database.default.DBDebug', $this->default['DBDebug']),
             FILTER_VALIDATE_BOOLEAN
